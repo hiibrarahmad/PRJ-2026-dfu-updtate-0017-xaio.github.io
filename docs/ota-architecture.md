@@ -1,30 +1,68 @@
 # OTA Architecture
 
-## Firmware
+## Firmware layer
 
-- Arduino sketch runs on `Seeeduino:nrf52:xiaonRF52840`.
-- BLE Device Information Service exposes firmware version, channel, and hardware revision.
-- `BLEDfu` enables buttonless entry into the Nordic Secure DFU bootloader.
-- A custom characteristic exposes structured version data including `version_code` and `security_epoch`.
+- Board: Seeed XIAO nRF52840
+- Sketch path: `firmware/eeg_test`
+- BLE exposes:
+  - firmware version
+  - channel
+  - hardware revision
+  - structured version payload
+- `BLEDfu` switches the board into the bootloader for OTA updates
 
-## Release Metadata
+## Bootloader layer
 
-GitHub Pages serves two files:
+- Bootloader family: XIAO OTAFIX legacy DFU bootloader
+- Accepted package style: legacy CRC-based DFU ZIP
+- Rejected package style: signed legacy init packet generated with `--key-file`
 
-- `catalog.json`: latest release per channel
-- `releases.json`: full release history per channel for downgrade selection and release-note display
+This is why the release workflow builds `legacy-crc` packages for the board.
 
-## Android App
+## Release metadata layer
 
-- Reads the device version over BLE.
-- Fetches GitHub Pages metadata with a one-hour cache.
-- Compares installed firmware with the latest channel release.
-- Shows no-update, upgrade, reinstall, or downgrade paths.
-- Records an audit entry for every install attempt and completed user action.
-- Downloads the DFU ZIP and signature, verifies SHA-256 and the app-side signature, then starts Nordic DFU.
+GitHub Pages serves:
 
-## GitHub Workflows
+- `catalog.json`
+  - latest published release per channel
+- `releases.json`
+  - full release history per channel
 
-- `build-firmware.yml`: tag-triggered compile and draft release
-- `publish-pages.yml`: release-published trigger that updates and deploys Pages metadata
+Each record contains:
+
+- version
+- version code
+- channel
+- package format
+- SHA-256
+- signature URL
+- release notes
+
+## Android app layer
+
+The app lives in a separate repository and reads this repo’s Pages metadata.
+
+The app:
+
+- reads installed version data over BLE
+- fetches `catalog.json` and `releases.json`
+- compares installed and available versions
+- allows upgrade, reinstall, and controlled downgrade
+- verifies SHA-256 and app-side ZIP signature
+- starts Nordic DFU with XIAO-safe settings
+
+## GitHub automation
+
+- `build-firmware.yml`
+  - runs on release tags
+  - compiles firmware
+  - builds `firmware.zip`
+  - signs the ZIP for app verification
+  - creates a draft release
+
+- `publish-pages.yml`
+  - runs when a release is published
+  - updates `catalog.json`
+  - updates `releases.json`
+  - deploys the metadata to GitHub Pages
 

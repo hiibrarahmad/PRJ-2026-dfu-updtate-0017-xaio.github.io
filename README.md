@@ -1,68 +1,91 @@
-# XAIO OTA DFU Phase 1
+# XAIO Firmware Release Repo
 
-This repository scaffolds a professional Phase 1 OTA update system for a Seeed XIAO nRF52840 test device and an Android companion app.
+This repository is the dedicated firmware and OTA release source for the XIAO nRF52840 update flow.
 
-What is included:
+What lives here:
 
-- `firmware/eeg_test`: Arduino firmware with BLE Device Information Service, buttonless DFU service, and a custom version characteristic.
-- `app`: Android app scaffold that reads device version data, fetches OTA metadata from GitHub Pages, compares versions, shows release notes, logs upgrade and downgrade actions, and starts Nordic Secure DFU.
-- `.github/workflows`: GitHub Actions for tag-driven firmware builds, draft releases, and GitHub Pages deployment of `catalog.json` and `releases.json`.
-- `catalog/site`: GitHub Pages output for the app to read published firmware metadata.
+- Arduino firmware in `firmware/eeg_test`
+- GitHub Actions that build DFU ZIPs from tags
+- GitHub Releases for `dev`, `beta`, and `stable`
+- GitHub Pages metadata in `catalog/site`
+- release documentation for versioning and publishing
 
-Current XIAO bootloader note:
+The Android app lives in a separate repository:
 
-- The XIAO OTAFIX bootloader used in testing accepts legacy CRC-based DFU ZIPs.
-- It rejects the signed legacy init packet format generated with `adafruit-nrfutil --key-file`.
-- This repository therefore signs the release ZIP for the Android app gate, but generates an unsigned legacy DFU package for the bootloader.
+- `PRJ-2026-dfu-ota-0016-xaio.github.io`
 
-## Repository Assumptions
+## Current OTA model
 
-The Android app is wired to a dedicated public firmware release repository.
+- Bootloader: XIAO OTAFIX legacy DFU bootloader
+- DFU package type: legacy CRC package
+- App-side trust check: RSA signature on the release ZIP
+- Metadata endpoints:
+  - `catalog.json` for latest per channel
+  - `releases.json` for full history and downgrade selection
 
-- GitHub owner: `hiibrarahmad`
-- Release repo: set with Gradle property `releaseRepo`
-- Default release repo value: `PRJ-2026-dfu-updtate-0017-xaio.github.io`
+Important:
 
-By default the app will look for:
+- This bootloader rejects signed legacy init packets from `adafruit-nrfutil --key-file`.
+- The workflow intentionally builds unsigned legacy CRC DFU ZIPs for the board.
+- The Android app still verifies the downloaded ZIP using the app signature before flashing.
 
-- `https://hiibrarahmad.github.io/PRJ-2026-dfu-updtate-0017-xaio.github.io/catalog.json`
-- `https://hiibrarahmad.github.io/PRJ-2026-dfu-updtate-0017-xaio.github.io/releases.json`
+## Release channels
 
-If you want the GitHub Pages site at the root path `https://YOUR_GITHUB_OWNER.github.io/`, GitHub requires the repository name to be exactly `YOUR_GITHUB_OWNER.github.io`.
+- `dev`: fastest iteration and internal testing
+- `beta`: broader testing before promotion
+- `stable`: approved release for normal device use
 
-## Release Flow
+Tag format controls the channel:
 
-1. Update the non-tag fields in [`firmware/eeg_test/version.h`](firmware/eeg_test/version.h) when hardware policy changes.
-2. Tag a release, for example `v1.2.0-stable`.
-3. GitHub Actions compiles the firmware, builds a legacy CRC DFU package that the XIAO bootloader accepts, signs the ZIP for the Android app gate, and creates a draft release.
-4. A human reviews and publishes the release.
-5. A second workflow regenerates `catalog.json` and `releases.json` and deploys them to GitHub Pages.
-6. The Android app reads the latest metadata, shows `No update` / `Update available`, and also lets the user pick an older published build for downgrade with logging.
+- `v0.1.7-dev`
+- `v0.2.1-beta`
+- `v1.0.1-stable`
 
-## Key Files
+## Main files
 
-- [`firmware/eeg_test/version.h`](firmware/eeg_test/version.h)
-- [`firmware/eeg_test/eeg_test.ino`](firmware/eeg_test/eeg_test.ino)
-- [`.github/workflows/build-firmware.yml`](.github/workflows/build-firmware.yml)
-- [`.github/workflows/publish-pages.yml`](.github/workflows/publish-pages.yml)
-- [`scripts/update_catalog.py`](scripts/update_catalog.py)
-- [`catalog/site/catalog.json`](catalog/site/catalog.json)
-- [`catalog/site/releases.json`](catalog/site/releases.json)
+- `firmware/eeg_test/version.h`
+- `firmware/eeg_test/eeg_test.ino`
+- `.github/workflows/build-firmware.yml`
+- `.github/workflows/publish-pages.yml`
+- `scripts/write_version_header.py`
+- `scripts/generate_release_metadata.py`
+- `scripts/update_catalog.py`
 
-## Secrets You Will Need On GitHub
+## Step-by-step docs
+
+- [Firmware Customization](docs/firmware-customization.md)
+- [Release Guide](docs/release-guide.md)
+- [OTA Architecture](docs/ota-architecture.md)
+- [Test Firmware Matrix](docs/test-firmware-matrix.md)
+
+## GitHub setup
+
+Required GitHub Actions secret:
 
 - `APP_SIGNATURE_PRIVATE_KEY_PEM_BASE64`
 
-The public key for the Android app-side ZIP signature must also replace the placeholder file in:
+Public key files:
 
-- `app/src/main/assets/ota_app_signature_public.pem`
+- `keys/app_signature_public.pem` is the public key that matches the ZIP-signing private key.
+- The Android app repo must carry the matching public key in `app/src/main/assets/ota_app_signature_public.pem`.
 
-## Local Validation
+## Local validation
 
-This workspace did not start with an Android SDK or Gradle installed, so the Android app is scaffolded but not fully built locally here.
-
-Firmware can be validated with:
+Compile firmware:
 
 ```powershell
 arduino-cli compile --fqbn Seeeduino:nrf52:xiaonRF52840 firmware/eeg_test
+```
+
+Inspect a generated ZIP:
+
+```powershell
+tar -tf firmware.zip
+```
+
+Check live metadata:
+
+```powershell
+curl https://hiibrarahmad.github.io/PRJ-2026-dfu-updtate-0017-xaio.github.io/catalog.json
+curl https://hiibrarahmad.github.io/PRJ-2026-dfu-updtate-0017-xaio.github.io/releases.json
 ```
