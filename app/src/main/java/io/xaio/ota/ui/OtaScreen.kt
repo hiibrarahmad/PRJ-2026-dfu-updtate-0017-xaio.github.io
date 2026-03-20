@@ -123,9 +123,9 @@ fun OtaScreen(
                         if (state.scannedDevices.isEmpty()) {
                             Text(
                                 if (state.isScanning) {
-                                    "Looking for XAIO devices advertising the version service."
+                                    "Looking for nearby BLE devices. Your XAIO board should appear within a few seconds."
                                 } else {
-                                    "Tap Scan Devices to discover nearby XAIO boards."
+                                    "Tap Scan Devices to discover nearby BLE boards and choose the correct XAIO device."
                                 },
                             )
                         } else {

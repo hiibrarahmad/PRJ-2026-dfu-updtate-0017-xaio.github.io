@@ -3,7 +3,6 @@ package io.xaio.ota.ble
 import android.Manifest
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
@@ -70,15 +69,10 @@ class BleDeviceScanner(private val context: Context) {
         }
 
         activeCallback = callback
-        val filters = listOf(
-            ScanFilter.Builder()
-                .setServiceUuid(ParcelUuid(AppConfig.versionServiceUuid))
-                .build(),
-        )
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
-        scanner.startScan(filters, settings, callback)
+        scanner.startScan(null, settings, callback)
         return true
     }
 
@@ -94,9 +88,18 @@ class BleDeviceScanner(private val context: Context) {
 
     private fun upsert(result: ScanResult) {
         val address = result.device.address ?: return
-        val deviceName = result.scanRecord?.deviceName
+        val scanRecord = result.scanRecord
+        val advertisesVersionService = scanRecord?.serviceUuids
+            ?.contains(ParcelUuid(AppConfig.versionServiceUuid)) == true
+        val advertisedName = scanRecord?.deviceName
             ?: runCatching { result.device.name }.getOrNull()
-            ?: "Unnamed XAIO device"
+
+        if (advertisedName == null && !advertisesVersionService) {
+            return
+        }
+
+        val deviceName = advertisedName
+            ?: if (advertisesVersionService) "Unnamed XAIO device" else "Unnamed BLE device"
         discovered[address] = ScannedBleDevice(
             address = address,
             name = deviceName,
@@ -106,9 +109,19 @@ class BleDeviceScanner(private val context: Context) {
 
     private fun sortedDevices(): List<ScannedBleDevice> = discovered.values
         .sortedWith(
-            compareByDescending<ScannedBleDevice> { it.name != "Unnamed XAIO device" }
+            compareByDescending<ScannedBleDevice> { scanPriority(it) }
                 .thenByDescending { it.rssi },
         )
+
+    private fun scanPriority(device: ScannedBleDevice): Int {
+        val name = device.name.uppercase()
+        return when {
+            name.contains("XAIO") -> 3
+            name.contains("XIAO") -> 2
+            !name.startsWith("UNNAMED") -> 1
+            else -> 0
+        }
+    }
 
     private fun hasScanPermission(): Boolean = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {

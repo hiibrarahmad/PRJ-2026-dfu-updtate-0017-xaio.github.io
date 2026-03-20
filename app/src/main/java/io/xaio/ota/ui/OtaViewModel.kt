@@ -57,9 +57,9 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
                         isScanning = true,
                         errorMessage = null,
                         statusMessage = if (devices.isEmpty()) {
-                            "Scanning for nearby XAIO devices."
+                            "Scanning for nearby BLE devices."
                         } else {
-                            "Select the correct device from the scan list."
+                            "Select the correct device from the list."
                         },
                     )
                 }
@@ -80,7 +80,7 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
                     isScanning = true,
                     scannedDevices = emptyList(),
                     errorMessage = null,
-                    statusMessage = "Scanning for nearby XAIO devices.",
+                    statusMessage = "Scanning for nearby BLE devices.",
                 )
             }
         }
@@ -92,7 +92,7 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 isScanning = false,
                 statusMessage = if (it.scannedDevices.isEmpty()) {
-                    "No XAIO devices found yet. You can scan again."
+                    "No BLE devices found yet. You can scan again."
                 } else {
                     "Scan stopped. Choose the correct device from the list."
                 },
