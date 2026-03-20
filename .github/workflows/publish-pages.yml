@@ -10,6 +10,10 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: ota-pages-metadata
+  cancel-in-progress: false
+
 permissions:
   contents: read
   pages: write
@@ -63,6 +67,14 @@ jobs:
             --pattern "release-metadata.json" \
             --pattern "firmware.zip.sha256" \
             --dir /tmp/release-assets
+
+      - name: Bootstrap current published metadata
+        shell: bash
+        run: |
+          mkdir -p catalog/site
+          SITE_BASE="https://${{ github.repository_owner }}.github.io/$(basename "${{ github.repository }}")"
+          curl -fsSL "$SITE_BASE/catalog.json" -o catalog/site/catalog.json || true
+          curl -fsSL "$SITE_BASE/releases.json" -o catalog/site/releases.json || true
 
       - name: Update catalog and release history
         env:

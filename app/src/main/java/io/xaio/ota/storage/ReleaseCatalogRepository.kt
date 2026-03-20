@@ -20,20 +20,8 @@ class ReleaseCatalogRepository(private val context: Context) {
     suspend fun fetch(): Result<ReleaseCatalogSnapshot> = withContext(Dispatchers.IO) {
         runCatching {
             val prefs = context.getSharedPreferences(AppConfig.otaCachePrefs, Context.MODE_PRIVATE)
-            val cachedAt = prefs.getLong("cache_time", 0L)
             val cachedCatalog = prefs.getString("catalog_json", null)
             val cachedReleases = prefs.getString("releases_json", null)
-
-            if (
-                cachedCatalog != null &&
-                cachedReleases != null &&
-                System.currentTimeMillis() - cachedAt < AppConfig.catalogCacheTtlMs
-            ) {
-                return@runCatching ReleaseCatalogSnapshot(
-                    latest = gson.fromJson(cachedCatalog, LatestCatalog::class.java),
-                    history = gson.fromJson(cachedReleases, ReleaseHistory::class.java),
-                )
-            }
 
             val catalogJson = getUrl(BuildConfig.CATALOG_URL)
             val releasesJson = getUrl(BuildConfig.RELEASES_URL)
