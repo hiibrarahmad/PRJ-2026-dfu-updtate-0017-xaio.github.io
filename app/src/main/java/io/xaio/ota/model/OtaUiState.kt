@@ -12,6 +12,9 @@ data class PendingConfirmation(
 
 data class OtaUiState(
     val deviceAddress: String = "",
+    val selectedDeviceName: String? = null,
+    val scannedDevices: List<ScannedBleDevice> = emptyList(),
+    val isScanning: Boolean = false,
     val selectedChannel: String = "stable",
     val deviceVersion: DeviceVersion? = null,
     val latestRelease: ReleaseRecord? = null,
@@ -19,9 +22,8 @@ data class OtaUiState(
     val busyMessage: String? = null,
     val downloadProgress: Int? = null,
     val flashProgress: Int? = null,
-    val statusMessage: String = "Enter the device MAC address, then read the current firmware.",
+    val statusMessage: String = "Scan for a device, choose the correct one, and the app will read the current firmware.",
     val errorMessage: String? = null,
     val pendingConfirmation: PendingConfirmation? = null,
     val auditExportPath: String? = null,
 )
-

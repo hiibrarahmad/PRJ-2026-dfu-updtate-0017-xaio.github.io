@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,14 +39,16 @@ import io.xaio.ota.AppConfig
 import io.xaio.ota.model.DeviceVersion
 import io.xaio.ota.model.OtaUiState
 import io.xaio.ota.model.ReleaseRecord
+import io.xaio.ota.model.ScannedBleDevice
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OtaScreen(
     state: OtaUiState,
-    onDeviceAddressChanged: (String) -> Unit,
     onChannelSelected: (String) -> Unit,
-    onReadDevice: () -> Unit,
+    onStartScan: () -> Unit,
+    onStopScan: () -> Unit,
+    onConnectDevice: (ScannedBleDevice) -> Unit,
     onReleaseClicked: (ReleaseRecord) -> Unit,
     onConfirmInstall: () -> Unit,
     onDismissDialog: () -> Unit,
@@ -102,17 +103,41 @@ fun OtaScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text("Device", style = MaterialTheme.typography.titleMedium)
-                        OutlinedTextField(
-                            value = state.deviceAddress,
-                            onValueChange = onDeviceAddressChanged,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Device MAC address") },
-                            placeholder = { Text("AA:BB:CC:DD:EE:FF") },
-                            singleLine = true,
-                        )
-                        Button(onClick = onReadDevice) {
-                            Text("Read Device")
+                        Text("Nearby Devices", style = MaterialTheme.typography.titleMedium)
+                        state.selectedDeviceName?.let { name ->
+                            Text("Selected: $name")
+                        }
+                        if (state.deviceAddress.isNotBlank()) {
+                            Text("Address: ${state.deviceAddress}")
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(onClick = onStartScan) {
+                                Text(if (state.isScanning) "Rescan" else "Scan Devices")
+                            }
+                            if (state.isScanning) {
+                                TextButton(onClick = onStopScan) {
+                                    Text("Stop")
+                                }
+                            }
+                        }
+                        if (state.scannedDevices.isEmpty()) {
+                            Text(
+                                if (state.isScanning) {
+                                    "Looking for XAIO devices advertising the version service."
+                                } else {
+                                    "Tap Scan Devices to discover nearby XAIO boards."
+                                },
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                state.scannedDevices.forEach { device ->
+                                    ScannedDeviceCard(
+                                        device = device,
+                                        isSelected = device.address == state.deviceAddress,
+                                        onConnectClick = { onConnectDevice(device) },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -309,6 +334,32 @@ private fun ReleaseCard(
                 }
                 TextButton(onClick = onNotesClick) {
                     Text("Release Notes")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScannedDeviceCard(
+    device: ScannedBleDevice,
+    isSelected: Boolean,
+    onConnectClick: () -> Unit,
+) {
+    Card {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(device.name, style = MaterialTheme.typography.titleSmall)
+            Text(device.address)
+            Text("Signal: ${device.rssi} dBm")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = onConnectClick) {
+                    Text(if (isSelected) "Reconnect" else "Connect")
+                }
+                if (isSelected) {
+                    Text("Selected", color = MaterialTheme.colorScheme.primary)
                 }
             }
         }

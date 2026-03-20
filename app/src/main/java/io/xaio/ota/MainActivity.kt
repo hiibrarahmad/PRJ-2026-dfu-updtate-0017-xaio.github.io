@@ -70,9 +70,10 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 OtaScreen(
                     state = state.value,
-                    onDeviceAddressChanged = viewModel::setDeviceAddress,
                     onChannelSelected = viewModel::selectChannel,
-                    onReadDevice = viewModel::readDeviceAndRefresh,
+                    onStartScan = viewModel::startDeviceScan,
+                    onStopScan = viewModel::stopDeviceScan,
+                    onConnectDevice = viewModel::connectToScannedDevice,
                     onReleaseClicked = viewModel::requestInstall,
                     onConfirmInstall = viewModel::confirmPendingInstall,
                     onDismissDialog = viewModel::dismissConfirmation,
@@ -92,4 +93,3 @@ class MainActivity : ComponentActivity() {
         super.onStop()
     }
 }
-

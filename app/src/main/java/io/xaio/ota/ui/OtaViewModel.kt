@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.xaio.ota.AppConfig
+import io.xaio.ota.ble.BleDeviceScanner
 import io.xaio.ota.ble.BleDeviceVersionReader
 import io.xaio.ota.dfu.OtaDfuService
 import io.xaio.ota.model.AuditEntry
@@ -13,6 +14,7 @@ import io.xaio.ota.model.PendingConfirmation
 import io.xaio.ota.model.PolicyResult
 import io.xaio.ota.model.ReleaseCatalogSnapshot
 import io.xaio.ota.model.ReleaseRecord
+import io.xaio.ota.model.ScannedBleDevice
 import io.xaio.ota.policy.OtaPolicyEngine
 import io.xaio.ota.storage.AuditLog
 import io.xaio.ota.storage.ReleaseCatalogRepository
@@ -32,6 +34,7 @@ import java.util.Locale
 
 class OtaViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val bleScanner = BleDeviceScanner(application)
     private val bleReader = BleDeviceVersionReader(application)
     private val catalogRepository = ReleaseCatalogRepository(application)
     private val policyEngine = OtaPolicyEngine(application)
@@ -44,8 +47,71 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(OtaUiState())
     val uiState: StateFlow<OtaUiState> = _uiState
 
-    fun setDeviceAddress(address: String) {
-        _uiState.update { it.copy(deviceAddress = address, errorMessage = null, auditExportPath = null) }
+    fun startDeviceScan() {
+        bleScanner.stop()
+        val started = bleScanner.start(
+            onDevicesChanged = { devices ->
+                _uiState.update {
+                    it.copy(
+                        scannedDevices = devices,
+                        isScanning = true,
+                        errorMessage = null,
+                        statusMessage = if (devices.isEmpty()) {
+                            "Scanning for nearby XAIO devices."
+                        } else {
+                            "Select the correct device from the scan list."
+                        },
+                    )
+                }
+            },
+            onError = { message ->
+                _uiState.update {
+                    it.copy(
+                        isScanning = false,
+                        errorMessage = message,
+                        statusMessage = "Scan could not start. Check Bluetooth and permissions.",
+                    )
+                }
+            },
+        )
+        if (started) {
+            _uiState.update {
+                it.copy(
+                    isScanning = true,
+                    scannedDevices = emptyList(),
+                    errorMessage = null,
+                    statusMessage = "Scanning for nearby XAIO devices.",
+                )
+            }
+        }
+    }
+
+    fun stopDeviceScan() {
+        bleScanner.stop()
+        _uiState.update {
+            it.copy(
+                isScanning = false,
+                statusMessage = if (it.scannedDevices.isEmpty()) {
+                    "No XAIO devices found yet. You can scan again."
+                } else {
+                    "Scan stopped. Choose the correct device from the list."
+                },
+            )
+        }
+    }
+
+    fun connectToScannedDevice(device: ScannedBleDevice) {
+        bleScanner.stop()
+        _uiState.update {
+            it.copy(
+                deviceAddress = device.address,
+                selectedDeviceName = device.name,
+                isScanning = false,
+                errorMessage = null,
+                statusMessage = "Connecting to ${device.name}.",
+            )
+        }
+        readDeviceAndRefresh()
     }
 
     fun selectChannel(channel: String) {
@@ -56,7 +122,7 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
     fun readDeviceAndRefresh() {
         val address = uiState.value.deviceAddress.trim()
         if (address.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Enter the device MAC address first.") }
+            _uiState.update { it.copy(errorMessage = "Scan and select a device first.") }
             return
         }
 
@@ -219,6 +285,11 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    override fun onCleared() {
+        bleScanner.stop()
+        super.onCleared()
+    }
+
     private fun refreshReleasePresentation() {
         val localSnapshot = snapshot ?: run {
             _uiState.update { it.copy(busyMessage = null) }
@@ -251,7 +322,7 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
         val address = uiState.value.deviceAddress.trim()
         val device = uiState.value.deviceVersion
         if (address.isBlank() || device == null) {
-            _uiState.update { it.copy(errorMessage = "Read the device and keep the MAC address populated before starting DFU.") }
+            _uiState.update { it.copy(errorMessage = "Read the selected device before starting DFU.") }
             return
         }
 
