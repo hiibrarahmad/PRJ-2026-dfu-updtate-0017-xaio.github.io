@@ -19,6 +19,12 @@ class OtaPolicyEngine(private val context: Context) {
         zipFile: File,
         signatureFile: File,
     ): PolicyResult {
+        if (release.dfuPackageFormat != "legacy-crc") {
+            return PolicyResult.HardBlock(
+                "This release uses an unsupported DFU package format for the current XIAO bootloader.",
+            )
+        }
+
         if (!release.hwAllow.contains(device.hardwareRev)) {
             return PolicyResult.HardBlock(
                 "This package is not compatible with hardware ${device.hardwareRev}. Allowed hardware: ${release.hwAllow.joinToString()}",
@@ -118,4 +124,3 @@ class OtaPolicyEngine(private val context: Context) {
         return signature.verify(signatureFile.readBytes())
     }
 }
-

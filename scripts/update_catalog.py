@@ -55,6 +55,7 @@ def main() -> None:
         "version": metadata["version"],
         "version_code": int(metadata["version_code"]),
         "channel": metadata["channel"],
+        "dfu_package_format": metadata.get("dfu_package_format", "legacy-crc"),
         "security_epoch": int(metadata["security_epoch"]),
         "forced_update": False,
         "hw_allow": metadata["hw_allow"],
@@ -85,4 +86,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

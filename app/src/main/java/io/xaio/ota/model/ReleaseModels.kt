@@ -7,6 +7,7 @@ data class ReleaseRecord(
     val version: String,
     @SerializedName("version_code") val versionCode: Int,
     val channel: String,
+    @SerializedName("dfu_package_format") val dfuPackageFormat: String? = null,
     @SerializedName("security_epoch") val securityEpoch: Int,
     @SerializedName("forced_update") val forcedUpdate: Boolean,
     @SerializedName("hw_allow") val hwAllow: List<String>,
@@ -37,17 +38,21 @@ data class ReleaseCatalogSnapshot(
     val latest: LatestCatalog,
     val history: ReleaseHistory,
 ) {
+    private fun isSupported(record: ReleaseRecord?): Boolean {
+        return record?.dfuPackageFormat == "legacy-crc"
+    }
+
     fun latestForChannel(channel: String): ReleaseRecord? = when (channel) {
         "stable" -> latest.stable
         "beta" -> latest.beta
         "dev" -> latest.dev
         else -> latest.stable
-    }
+    }?.takeIf(::isSupported)
 
     fun historyForChannel(channel: String): List<ReleaseRecord> = when (channel) {
         "stable" -> history.stable
         "beta" -> history.beta
         "dev" -> history.dev
         else -> history.stable
-    }
+    }.filter(::isSupported)
 }

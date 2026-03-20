@@ -1,31 +1,12 @@
 # Key Setup
 
-This project uses two signing layers:
+The current XIAO OTAFIX bootloader path in this project uses legacy CRC-based DFU packages.
+That means the bootloader does not accept the signed legacy init packet format generated with
+`adafruit-nrfutil --key-file`.
 
-## 1. Secure DFU Bootloader Signing Key
+For the working Phase 1 flow in this repository, use the Android app-side ZIP signature only.
 
-Purpose:
-
-- Validates the DFU init packet in the nRF52 bootloader.
-- Required for professional Secure DFU.
-
-Generate locally:
-
-```bash
-adafruit-nrfutil keys --gen-key dfu_bootloader_private.pem
-adafruit-nrfutil keys --show-vk pem dfu_bootloader_private.pem > dfu_bootloader_public.pem
-```
-
-Store on GitHub:
-
-- Secret: `DFU_BOOTLOADER_PRIVATE_KEY_PEM_BASE64`
-
-Notes:
-
-- Base64-encode the private key before storing it as a secret.
-- The matching public key must be compiled into the bootloader image on the device.
-
-## 2. Android App ZIP Signature Key
+## 1. Android App ZIP Signature Key
 
 Purpose:
 
@@ -48,3 +29,8 @@ Distribute publicly:
 
 Do not commit private keys.
 
+## Future upgrade path
+
+If you later move to a bootloader that enforces signed DFU packages, add a separate bootloader
+signing key and switch the build pipeline back to signed DFU ZIP generation. That is not compatible
+with the current XIAO OTAFIX legacy CRC bootloader flow.

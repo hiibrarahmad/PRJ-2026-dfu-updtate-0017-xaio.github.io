@@ -110,11 +110,10 @@ jobs:
             --build-path build \
             "${{ env.SKETCH_PATH }}"
 
-      - name: Restore signing keys
+      - name: Restore app-signing key
         shell: bash
         run: |
           mkdir -p /tmp/keys
-          echo "${{ secrets.DFU_BOOTLOADER_PRIVATE_KEY_PEM_BASE64 }}" | base64 -d > /tmp/keys/dfu_bootloader_private.pem
           echo "${{ secrets.APP_SIGNATURE_PRIVATE_KEY_PEM_BASE64 }}" | base64 -d > /tmp/keys/app_signature_private.pem
 
       - name: Build DFU package
@@ -124,7 +123,6 @@ jobs:
             --sd-req 0x0123 \
             --application "build/eeg_test.ino.hex" \
             --application-version "${{ steps.tag.outputs.version_code }}" \
-            --key-file /tmp/keys/dfu_bootloader_private.pem \
             firmware.zip
 
       - name: Sign ZIP for Android app verification
@@ -183,5 +181,4 @@ jobs:
         if: always()
         shell: bash
         run: |
-          shred -u /tmp/keys/dfu_bootloader_private.pem || rm -f /tmp/keys/dfu_bootloader_private.pem
           shred -u /tmp/keys/app_signature_private.pem || rm -f /tmp/keys/app_signature_private.pem

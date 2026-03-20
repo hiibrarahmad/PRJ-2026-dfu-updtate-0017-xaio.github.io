@@ -33,6 +33,7 @@ def main() -> None:
         "version": values["FW_SEMVER"],
         "version_code": int(values["FW_VERSION_CODE"]),
         "channel": values["FW_CHANNEL"],
+        "dfu_package_format": "legacy-crc",
         "security_epoch": int(values["SECURITY_EPOCH"]),
         "hw_allow": [values["HW_REV"]],
         "min_bootloader": values["MIN_BOOTLOADER"],
@@ -45,4 +46,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -9,6 +9,12 @@ What is included:
 - `.github/workflows`: GitHub Actions for tag-driven firmware builds, draft releases, and GitHub Pages deployment of `catalog.json` and `releases.json`.
 - `catalog/site`: GitHub Pages output for the app to read published firmware metadata.
 
+Current XIAO bootloader note:
+
+- The XIAO OTAFIX bootloader used in testing accepts legacy CRC-based DFU ZIPs.
+- It rejects the signed legacy init packet format generated with `adafruit-nrfutil --key-file`.
+- This repository therefore signs the release ZIP for the Android app gate, but generates an unsigned legacy DFU package for the bootloader.
+
 ## Repository Assumptions
 
 The Android app is wired to a dedicated public firmware release repository.
@@ -28,7 +34,7 @@ If you want the GitHub Pages site at the root path `https://YOUR_GITHUB_OWNER.gi
 
 1. Update the non-tag fields in [`firmware/eeg_test/version.h`](firmware/eeg_test/version.h) when hardware policy changes.
 2. Tag a release, for example `v1.2.0-stable`.
-3. GitHub Actions compiles the firmware, signs the DFU package for the bootloader, signs the ZIP for the Android app gate, and creates a draft release.
+3. GitHub Actions compiles the firmware, builds a legacy CRC DFU package that the XIAO bootloader accepts, signs the ZIP for the Android app gate, and creates a draft release.
 4. A human reviews and publishes the release.
 5. A second workflow regenerates `catalog.json` and `releases.json` and deploys them to GitHub Pages.
 6. The Android app reads the latest metadata, shows `No update` / `Update available`, and also lets the user pick an older published build for downgrade with logging.
@@ -45,7 +51,6 @@ If you want the GitHub Pages site at the root path `https://YOUR_GITHUB_OWNER.gi
 
 ## Secrets You Will Need On GitHub
 
-- `DFU_BOOTLOADER_PRIVATE_KEY_PEM_BASE64`
 - `APP_SIGNATURE_PRIVATE_KEY_PEM_BASE64`
 
 The public key for the Android app-side ZIP signature must also replace the placeholder file in:
