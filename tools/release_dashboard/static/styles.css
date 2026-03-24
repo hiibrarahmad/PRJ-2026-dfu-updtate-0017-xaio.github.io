@@ -1,0 +1,253 @@
+:root {
+  color-scheme: light;
+  --bg: #f4efe6;
+  --paper: #fffaf4;
+  --ink: #192022;
+  --muted: #5a6467;
+  --line: #d7d0c4;
+  --teal: #0d6f68;
+  --amber: #9a5d00;
+  --blue: #165f8f;
+  --danger: #a93232;
+  --shadow: 0 20px 60px rgba(19, 32, 34, 0.08);
+  --radius: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(13, 111, 104, 0.10), transparent 28%),
+    radial-gradient(circle at top right, rgba(22, 95, 143, 0.10), transparent 30%),
+    radial-gradient(circle at bottom center, rgba(154, 93, 0, 0.08), transparent 30%),
+    var(--bg);
+  color: var(--ink);
+}
+
+.page {
+  width: min(1200px, calc(100% - 32px));
+  margin: 32px auto 48px;
+}
+
+.hero,
+.card {
+  background: rgba(255, 250, 244, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(25, 32, 34, 0.08);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.hero-copy h1,
+.card h2 {
+  margin: 0;
+}
+
+.hero-copy h1 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.subtitle,
+.supporting,
+.hero-note p,
+label small {
+  color: var(--muted);
+}
+
+.hero-note {
+  padding: 20px;
+  border-radius: 20px;
+  background: linear-gradient(140deg, rgba(13, 111, 104, 0.08), rgba(22, 95, 143, 0.05));
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.card {
+  padding: 24px;
+}
+
+.card.full {
+  margin-bottom: 20px;
+}
+
+.card-head {
+  margin-bottom: 16px;
+}
+
+.status-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.status-list div {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(13, 111, 104, 0.06);
+}
+
+.status-list dt {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.status-list dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: var(--teal);
+  color: white;
+  cursor: pointer;
+  transition: transform 140ms ease, opacity 140ms ease, background 140ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button.secondary {
+  background: rgba(25, 32, 34, 0.08);
+  color: var(--ink);
+}
+
+button.danger {
+  background: var(--danger);
+}
+
+.release-form {
+  display: grid;
+  gap: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+}
+
+label span {
+  font-weight: 600;
+}
+
+label.wide {
+  grid-column: 1 / -1;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  padding: 12px 14px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 180px;
+}
+
+.option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.checkbox input {
+  width: auto;
+}
+
+.log-box {
+  margin: 0;
+  padding: 16px;
+  min-height: 140px;
+  border-radius: 18px;
+  background: #171d1f;
+  color: #dfe7e8;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.tag-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+@media (max-width: 860px) {
+  .page {
+    width: min(100%, calc(100% - 24px));
+    margin-top: 20px;
+  }
+
+  .hero,
+  .grid,
+  .form-grid,
+  .status-list {
+    grid-template-columns: 1fr;
+  }
+}

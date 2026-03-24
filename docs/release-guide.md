@@ -137,3 +137,20 @@ Good:
 Avoid:
 
 - silently rebuilding `v0.1.7-dev`
+
+## 12. Alternative manual release flow
+
+If you already have a finished `firmware.zip` and do not want the tag-driven build flow, use the local dashboard:
+
+```powershell
+.\run_release_dashboard.ps1
+```
+
+The dashboard lets you:
+
+- sign in to GitHub on a new PC
+- upload a DFU ZIP
+- define version, channel, and release notes
+- sign the ZIP assets locally
+- create the GitHub Release
+- clean leftover artifacts after the run

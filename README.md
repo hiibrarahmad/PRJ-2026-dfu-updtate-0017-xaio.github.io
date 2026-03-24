@@ -7,6 +7,7 @@ What lives here:
 - Arduino firmware in `firmware/eeg_test`
 - GitHub Actions that build DFU ZIPs from tags
 - GitHub Actions that queue metadata publishing from `main`
+- local release dashboard tooling in `tools/release_dashboard`
 - GitHub Releases for `dev`, `beta`, and `stable`
 - GitHub Pages metadata in `catalog/site`
 - release documentation for versioning and publishing
@@ -59,6 +60,7 @@ Tag format controls the channel:
 
 - [Firmware Customization](docs/firmware-customization.md)
 - [Release Guide](docs/release-guide.md)
+- [Release Dashboard](docs/release-dashboard.md)
 - [OTA Architecture](docs/ota-architecture.md)
 - [Test Firmware Matrix](docs/test-firmware-matrix.md)
 
@@ -92,6 +94,20 @@ Check live metadata:
 ```powershell
 curl https://hiibrarahmad.github.io/PRJ-2026-dfu-updtate-0017-xaio.github.io/catalog.json
 curl https://hiibrarahmad.github.io/PRJ-2026-dfu-updtate-0017-xaio.github.io/releases.json
+```
+
+## Local dashboard
+
+If you already have a finished DFU ZIP and want to publish it through a guided UI:
+
+```powershell
+.\run_release_dashboard.ps1
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8123
 ```
 
 ## Fleet visibility note

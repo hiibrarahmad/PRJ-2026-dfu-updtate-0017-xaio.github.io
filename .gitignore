@@ -9,6 +9,8 @@ captures/
 *.log
 *.tmp
 *.orig
+__pycache__/
+*.pyc
 
 # Android signing and local secrets
 *.jks
@@ -26,3 +28,4 @@ firmware.zip
 firmware.zip.sig
 firmware.zip.sha256
 gradle-*-bin.zip
+tools/release_dashboard/runtime/

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>XAIO Release Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">XAIO Firmware Repo</p>
+          <h1>Release Dashboard</h1>
+          <p class="subtitle">
+            Upload a DFU ZIP, define the version and update notes, sign the assets locally,
+            and create the GitHub Release from one place.
+          </p>
+        </div>
+        <div class="hero-note">
+          <strong>Local-first workflow</strong>
+          <p>The ZIP and private signing key stay on this PC. The dashboard uses your detected repo and GitHub CLI session.</p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <div class="card-head">
+            <p class="eyebrow">Connection</p>
+            <h2>GitHub and Repo Status</h2>
+          </div>
+          <dl class="status-list">
+            <div>
+              <dt>Repo</dt>
+              <dd id="repo-slug">Checking...</dd>
+            </div>
+            <div>
+              <dt>Branch</dt>
+              <dd id="repo-branch">Checking...</dd>
+            </div>
+            <div>
+              <dt>GitHub Auth</dt>
+              <dd id="github-auth">Checking...</dd>
+            </div>
+            <div>
+              <dt>Tools</dt>
+              <dd id="tool-state">Checking...</dd>
+            </div>
+          </dl>
+          <div class="button-row">
+            <button type="button" class="secondary" id="refresh-status">Refresh Status</button>
+            <button type="button" id="github-login">Sign In To GitHub</button>
+            <button type="button" class="secondary" id="github-signup">Create GitHub Account</button>
+          </div>
+          <pre id="auth-summary" class="log-box">Loading status...</pre>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <p class="eyebrow">Maintenance</p>
+            <h2>Cleanup</h2>
+          </div>
+          <p class="supporting">
+            Remove leftover build and release artifacts after a publish run. This never deletes committed source files.
+          </p>
+          <ul id="cleanup-targets" class="tag-list"></ul>
+          <div class="button-row">
+            <button type="button" class="danger" id="run-cleanup">Run Cleanup</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="card full">
+        <div class="card-head">
+          <p class="eyebrow">Release Composer</p>
+          <h2>Create GitHub Release From A DFU ZIP</h2>
+        </div>
+        <form id="release-form" class="release-form">
+          <div class="form-grid">
+            <label>
+              <span>Firmware ZIP</span>
+              <input type="file" name="firmware_zip" accept=".zip" required>
+            </label>
+            <label>
+              <span>Version</span>
+              <input type="text" name="version" id="version" placeholder="0.1.8" required>
+            </label>
+            <label>
+              <span>Channel</span>
+              <select name="channel" id="channel">
+                <option value="dev">dev</option>
+                <option value="beta">beta</option>
+                <option value="stable">stable</option>
+              </select>
+            </label>
+            <label>
+              <span>Version Code</span>
+              <input type="text" id="version-code-preview" value="Auto" disabled>
+            </label>
+            <label>
+              <span>Hardware Revision</span>
+              <input type="text" name="hardware_rev" id="hardware_rev" required>
+            </label>
+            <label>
+              <span>Security Epoch</span>
+              <input type="number" name="security_epoch" id="security_epoch" min="0" required>
+            </label>
+            <label>
+              <span>Minimum Bootloader</span>
+              <input type="text" name="min_bootloader" id="min_bootloader" required>
+            </label>
+            <label>
+              <span>SoftDevice Stack</span>
+              <input type="text" name="stack_req" id="stack_req" required>
+            </label>
+            <label class="wide">
+              <span>Local Signing Key Path</span>
+              <input type="text" name="signing_key_path" id="signing_key_path" placeholder="C:\keys\app_signature_private.pem" required>
+              <small>The private key stays local and is used only to create `firmware.zip.sig`.</small>
+            </label>
+            <label class="wide">
+              <span>Release Notes</span>
+              <textarea name="release_notes" id="release_notes" rows="10" placeholder="## Firmware 0.1.8 (dev)&#10;&#10;- What changed&#10;- What to test&#10;- Any warnings"></textarea>
+            </label>
+          </div>
+
+          <div class="option-row">
+            <label class="checkbox">
+              <input type="checkbox" name="publish_immediately" checked>
+              <span>Publish immediately instead of creating a draft</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="clean_after" checked>
+              <span>Clean temp artifacts after release creation</span>
+            </label>
+          </div>
+
+          <div class="button-row">
+            <button type="submit">Create GitHub Release</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card full">
+        <div class="card-head">
+          <p class="eyebrow">Run Log</p>
+          <h2>Dashboard Output</h2>
+        </div>
+        <pre id="output-log" class="log-box">Ready.</pre>
+      </section>
+    </main>
+
+    <script>
+      const outputLog = document.getElementById("output-log");
+      const authSummary = document.getElementById("auth-summary");
+      const cleanupTargets = document.getElementById("cleanup-targets");
+
+      function writeLog(message) {
+        const stamp = new Date().toLocaleTimeString();
+        outputLog.textContent = `[${stamp}] ${message}\n` + outputLog.textContent;
+      }
+
+      function setVersionCodePreview() {
+        const version = document.getElementById("version").value.trim();
+        const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+        document.getElementById("version-code-preview").value = match
+          ? `${parseInt(match[1], 10) * 10000 + parseInt(match[2], 10) * 100 + parseInt(match[3], 10)}`
+          : "Auto";
+      }
+
+      async function readJson(url, options = {}) {
+        const response = await fetch(url, options);
+        const payload = await response.json();
+        if (!response.ok || payload.ok === false) {
+          throw new Error(payload.error || "Request failed.");
+        }
+        return payload;
+      }
+
+      async function loadStatus() {
+        const payload = await readJson("/api/status");
+        const state = payload.state;
+        document.getElementById("repo-slug").textContent = state.repo_slug;
+        document.getElementById("repo-branch").textContent = state.branch;
+        document.getElementById("github-auth").textContent = state.github.authenticated
+          ? `Signed in as ${state.github.account || "GitHub user"}`
+          : "Not signed in";
+        document.getElementById("tool-state").textContent = Object.entries(state.tools)
+          .map(([key, value]) => `${key}:${value ? "ok" : "missing"}`)
+          .join(" | ");
+        authSummary.textContent = state.github.summary || "No GitHub status output.";
+
+        if (!document.getElementById("channel").dataset.userSet) {
+          document.getElementById("channel").value = state.defaults.channel;
+        }
+        document.getElementById("hardware_rev").value = state.defaults.hardware_rev;
+        document.getElementById("security_epoch").value = state.defaults.security_epoch;
+        document.getElementById("min_bootloader").value = state.defaults.min_bootloader;
+        document.getElementById("stack_req").value = state.defaults.stack_req;
+        if (!document.getElementById("signing_key_path").value) {
+          document.getElementById("signing_key_path").value = state.defaults.signing_key_path || "";
+        }
+
+        cleanupTargets.innerHTML = "";
+        if (state.cleanup_targets.length === 0) {
+          cleanupTargets.innerHTML = "<li>Nothing to clean right now.</li>";
+        } else {
+          state.cleanup_targets.forEach((item) => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            cleanupTargets.appendChild(li);
+          });
+        }
+      }
+
+      document.getElementById("refresh-status").addEventListener("click", async () => {
+        await loadStatus();
+        writeLog("Status refreshed.");
+      });
+
+      document.getElementById("github-login").addEventListener("click", async () => {
+        const payload = await readJson("/api/github/login", { method: "POST" });
+        writeLog(payload.message);
+      });
+
+      document.getElementById("github-signup").addEventListener("click", async () => {
+        const payload = await readJson("/api/github/signup", { method: "POST" });
+        writeLog(payload.message);
+      });
+
+      document.getElementById("run-cleanup").addEventListener("click", async () => {
+        const payload = await readJson("/api/cleanup", { method: "POST" });
+        const removed = payload.result.removed.length ? payload.result.removed.join(", ") : "Nothing removed.";
+        writeLog(`Cleanup finished. ${removed}`);
+        await loadStatus();
+      });
+
+      document.getElementById("release-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        try {
+          const payload = await readJson("/api/releases", {
+            method: "POST",
+            body: formData
+          });
+          writeLog(`Release ${payload.result.tag} created: ${payload.result.release_url}`);
+          if (payload.result.cleaned) {
+            writeLog(`Cleanup removed: ${payload.result.cleaned.removed.join(", ") || "nothing"}`);
+          }
+          await loadStatus();
+        } catch (error) {
+          writeLog(`Release creation failed: ${error.message}`);
+        }
+      });
+
+      document.getElementById("version").addEventListener("input", setVersionCodePreview);
+      document.getElementById("channel").addEventListener("change", (event) => {
+        event.target.dataset.userSet = "true";
+      });
+
+      setVersionCodePreview();
+      loadStatus().catch((error) => writeLog(`Status load failed: ${error.message}`));
+    </script>
+  </body>
+</html>
