@@ -104,6 +104,12 @@ If you already have a finished DFU ZIP and want to publish it through a guided U
 .\run_release_dashboard.ps1
 ```
 
+If PowerShell blocks local scripts on your PC, use:
+
+```cmd
+run_release_dashboard.cmd
+```
+
 Then open:
 
 ```text

@@ -39,6 +39,18 @@ From the repo root:
 .\run_release_dashboard.ps1
 ```
 
+If PowerShell execution policy blocks `.ps1` files on your PC, use the Windows launcher instead:
+
+```cmd
+run_release_dashboard.cmd
+```
+
+Or run PowerShell once with a one-time bypass:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run_release_dashboard.ps1
+```
+
 Then open:
 
 ```text
@@ -53,7 +65,7 @@ On a new PC:
 2. install GitHub CLI
 3. clone this repo
 4. place your private signing key somewhere safe on the PC
-5. run `.\run_release_dashboard.ps1`
+5. run `run_release_dashboard.cmd` or `.\run_release_dashboard.ps1`
 6. click `Sign In To GitHub` in the dashboard
 7. confirm the repo and auth status turn healthy
 
