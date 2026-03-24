@@ -69,9 +69,16 @@ Replace the placeholder notes with:
 
 Once you click publish:
 
+- `queue-pages-publish.yml` dispatches the Pages publish workflow on `main`
 - `publish-pages.yml` updates `catalog.json`
 - it also updates `releases.json`
 - GitHub Pages serves the new metadata
+
+Why the extra queue step:
+
+- the `github-pages` environment is protected to allow `main`
+- a workflow that runs directly on the release tag can be rejected by Pages branch and tag rules
+- dispatching the real Pages publish workflow on `main` keeps the protection in place and still lets release metadata update automatically
 
 ## 8. Verify the metadata
 
@@ -85,6 +92,13 @@ Confirm:
 - the target channel now points to the new tag
 - the new release appears in history
 - `dfu_package_format` is `legacy-crc`
+
+If metadata does not update:
+
+1. open Actions in GitHub
+2. check `Queue OTA Metadata Publish`
+3. confirm it triggered `Publish OTA Metadata To GitHub Pages`
+4. rerun `Publish OTA Metadata To GitHub Pages` manually with the release tag if needed
 
 ## 9. Verify from the app
 

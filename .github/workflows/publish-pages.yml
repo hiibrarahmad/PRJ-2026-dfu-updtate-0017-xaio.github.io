@@ -1,8 +1,6 @@
 name: Publish OTA Metadata To GitHub Pages
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -22,6 +20,9 @@ permissions:
 jobs:
   publish-pages:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
@@ -33,11 +34,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
-          else
-            TAG="${{ github.event.release.tag_name }}"
-          fi
+          TAG="${{ inputs.tag }}"
 
           gh release view "$TAG" \
             --repo "${{ github.repository }}" \

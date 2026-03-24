@@ -1,0 +1,24 @@
+name: Queue OTA Metadata Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  queue-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Pages publish on the default branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh workflow run publish-pages.yml \
+            --repo "${{ github.repository }}" \
+            --ref "${{ github.event.repository.default_branch }}" \
+            -f tag="${{ github.event.release.tag_name }}"

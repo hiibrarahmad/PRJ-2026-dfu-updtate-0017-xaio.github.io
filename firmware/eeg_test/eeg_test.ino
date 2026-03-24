@@ -1,4 +1,5 @@
 #include <bluefruit.h>
+#include <Adafruit_TinyUSB.h>
 #include <string.h>
 #include "version.h"
 
@@ -81,6 +82,28 @@ void setupVersionService() {
   versionChar.write(versionJson, strlen(versionJson));
 }
 
+void setupUsbConsole() {
+  TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
+  TinyUSBDevice.setProductDescriptor(MODEL_NAME);
+  TinyUSBDevice.begin();
+
+  Serial.begin(115200);
+  uint32_t startedAt = millis();
+  while (!TinyUSBDevice.mounted() && millis() - startedAt < 1500) {
+    delay(10);
+  }
+
+  Serial.println();
+  Serial.print("Booting firmware ");
+  Serial.print(FW_SEMVER);
+  Serial.print(" [");
+  Serial.print(FW_CHANNEL);
+  Serial.print("] code=");
+  Serial.print(FW_VERSION_CODE);
+  Serial.print(" epoch=");
+  Serial.println(SECURITY_EPOCH);
+}
+
 void setupLedPattern() {
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
@@ -123,6 +146,8 @@ void startAdvertising() {
 }
 
 void setup() {
+  setupUsbConsole();
+
   Bluefruit.begin();
   Bluefruit.setName(DEVICE_NAME);
   Bluefruit.setTxPower(4);
